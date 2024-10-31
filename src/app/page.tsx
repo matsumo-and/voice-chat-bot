@@ -13,6 +13,7 @@ import SendIcon from "@mui/icons-material/Send";
 import CallIcon from "@mui/icons-material/Call";
 import CallEndIcon from "@mui/icons-material/CallEnd";
 import { listBucket } from "@/lib/aws/listS3";
+import useTranscribe from "@/lib/aws/streamTranscribe";
 
 type Message = {
   sender: "user" | "chatbot";
@@ -22,6 +23,9 @@ type Message = {
 export default function Home(props: { disableCustomTheme?: boolean }) {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState<string>("");
+
+  const { startTranscription, stopTranscription, transcripts } =
+    useTranscribe();
 
   const handleSend = async () => {
     if (input.trim() === "") return;
@@ -137,14 +141,19 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
               </IconButton>
               <IconButton
                 color="success"
-                onClick={handleSend}
+                onClick={async () => {
+                  await startTranscription();
+                }}
                 sx={{ marginX: 1 }}
               >
                 <CallIcon fontSize={"large"} />
               </IconButton>
               <IconButton
                 color="error"
-                onClick={handleSend}
+                onClick={() => {
+                  stopTranscription();
+                  console.log(transcripts);
+                }}
                 sx={{ marginX: 1 }}
               >
                 <CallEndIcon fontSize={"large"} />
