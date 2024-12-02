@@ -1,3 +1,5 @@
+"use client";
+
 import {
   StartStreamTranscriptionCommand,
   TranscribeStreamingClient,
@@ -28,13 +30,11 @@ const useTranscribe = () => {
     }[]
   >([]);
 
-  console.log(process.env.NEXT_PUBLIC_AWS_REGION);
-
   const client = new TranscribeStreamingClient({
     region: process.env.NEXT_PUBLIC_AWS_REGION,
     credentials: {
-      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ?? "",
-      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY ?? "",
+      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
     },
   });
 
@@ -144,6 +144,7 @@ const useTranscribe = () => {
       micStream.stop();
       setRecording(false);
       setMicStream(undefined);
+      setTranscripts([]);
     }
   };
 
