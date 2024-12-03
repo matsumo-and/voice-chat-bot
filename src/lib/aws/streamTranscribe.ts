@@ -39,6 +39,7 @@ const useTranscribe = () => {
   });
 
   const startStream = async (mic: MicrophoneStream) => {
+    // generate pcm encoded audio stream.
     const audioStream = async function* () {
       for await (const chunk of mic as unknown as Buffer[]) {
         yield {

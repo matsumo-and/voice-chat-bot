@@ -6,7 +6,6 @@ import AppBar from "@mui/material/AppBar";
 import Stack from "@mui/material/Stack";
 import MuiToolbar from "@mui/material/Toolbar";
 import { tabsClasses } from "@mui/material/Tabs";
-import Typography from "@mui/material/Typography";
 
 const Toolbar = styled(MuiToolbar)({
   width: "100%",
@@ -48,15 +47,11 @@ export default function AppNavbar() {
             width: "100%",
           }}
         >
-          <Stack direction="row" spacing={1} sx={{ justifyContent: "center" }}>
-            <Typography
-              variant="h4"
-              component="h1"
-              sx={{ color: "text.primary" }}
-            >
-              Dashboard
-            </Typography>
-          </Stack>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ justifyContent: "center" }}
+          ></Stack>
         </Stack>
       </Toolbar>
     </AppBar>

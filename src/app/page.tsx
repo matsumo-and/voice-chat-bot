@@ -10,8 +10,7 @@ import AppTheme from "../components/AppTheme";
 //import ChatPage from "@/features/Dashboard";
 import { Typography, TextField, IconButton } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
-import CallIcon from "@mui/icons-material/Call";
-import CallEndIcon from "@mui/icons-material/CallEnd";
+import Mic from "@mui/icons-material/Mic";
 import { listBucket } from "@/lib/aws/listS3";
 import useTranscribe from "@/lib/aws/streamTranscribe";
 
@@ -24,7 +23,7 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState<string>("");
 
-  const { startTranscription, stopTranscription, transcripts } =
+  const { startTranscription, stopTranscription, recording, transcripts } =
     useTranscribe();
 
   const handleSend = async () => {
@@ -44,15 +43,16 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
   return (
     <AppTheme {...props} themeComponents={undefined}>
       <CssBaseline enableColorScheme />
+      <AppNavbar />
+
       <Box
         sx={{
-          display: "flex",
+          display: "bolck",
           //height: "100vh",
           backgroundColor: `white`,
           overflowY: "hidden",
         }}
       >
-        <AppNavbar />
         {/* Main content */}
         <Box
           component="main"
@@ -68,7 +68,7 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
               justifyContent: "space-between",
               mx: 3,
               mt: { xs: 8, md: 0 },
-              height: "100vh",
+              height: "auto",
               overflowY: "hidden",
             }}
           >
@@ -77,7 +77,7 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
               component="main"
               sx={() => ({
                 minWidth: "100%",
-                height: "calc(100vh - 100px)",
+                height: "100vh",
                 overflowY: "scroll",
               })}
             >
@@ -107,15 +107,48 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
                   </Typography>
                 </Box>
               ))}
+
+              {/** transcription */}
+              {recording && transcripts?.length > 0 && (
+                <Box
+                  sx={{
+                    minWidth: "100%",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginBottom: 1,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      backgroundColor: "#1976d2",
+                      color: "#fff",
+                      padding: "8px 12px",
+                      borderRadius: 4,
+                      maxWidth: "60%",
+                      wordWrap: "break-word",
+                    }}
+                  >
+                    {transcripts
+                      .map((transcript) => transcript.transcript)
+                      .join(" ")}
+                  </Typography>
+                </Box>
+              )}
             </Box>
             <Box
               sx={{
+                position: "fixed",
                 display: "flex",
+                backgroundColor: `white`,
                 minWidth: "100%",
                 minHeight: "100px",
+                padding: "5px",
                 alignItems: "center",
                 justifyContent: "center",
+                borderBottom: "1px solid",
+                borderColor: "divider",
                 marginTop: 0,
+                bottom: 0,
               }}
             >
               <TextField
@@ -139,25 +172,37 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
               <IconButton type="submit" color="primary" onClick={handleSend}>
                 <SendIcon fontSize="medium" />
               </IconButton>
-              <IconButton
-                color="success"
-                onClick={async () => {
-                  await startTranscription();
-                }}
-                sx={{ marginX: 1 }}
-              >
-                <CallIcon fontSize={"large"} />
-              </IconButton>
-              <IconButton
-                color="error"
-                onClick={() => {
-                  stopTranscription();
-                  console.log(transcripts);
-                }}
-                sx={{ marginX: 1 }}
-              >
-                <CallEndIcon fontSize={"large"} />
-              </IconButton>
+
+              {recording ? (
+                <IconButton
+                  color="error"
+                  onClick={() => {
+                    stopTranscription();
+                    setMessages([
+                      ...messages,
+                      {
+                        sender: "user",
+                        content: transcripts
+                          .map((transcript) => transcript.transcript)
+                          .join(" "),
+                      },
+                    ]);
+                  }}
+                  sx={{ marginX: 1 }}
+                >
+                  <Mic fontSize={"large"} />
+                </IconButton>
+              ) : (
+                <IconButton
+                  color="info"
+                  onClick={async () => {
+                    await startTranscription();
+                  }}
+                  sx={{ marginX: 1 }}
+                >
+                  <Mic fontSize={"large"} />
+                </IconButton>
+              )}
             </Box>
           </Stack>
         </Box>
