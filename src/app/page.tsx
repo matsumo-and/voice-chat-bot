@@ -13,6 +13,7 @@ import SendIcon from "@mui/icons-material/Send";
 import Mic from "@mui/icons-material/Mic";
 import { listBucket } from "@/lib/aws/listS3";
 import useTranscribe from "@/lib/aws/streamTranscribe";
+import { conversation } from "@/lib/aws/conversation";
 
 type Message = {
   sender: "user" | "chatbot";
@@ -176,8 +177,26 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
               {recording ? (
                 <IconButton
                   color="error"
-                  onClick={() => {
+                  onClick={async () => {
                     stopTranscription();
+
+                    const tmp = messages.map((message) => {
+                      const aa: {
+                        role: "user" | "chatbot";
+                        message: string;
+                      } = {
+                        role: message.sender,
+                        message: message.content,
+                      };
+                      return aa;
+                    });
+
+                    await conversation({
+                      message: transcripts
+                        .map((transcript) => transcript.transcript)
+                        .join(" "),
+                      history: tmp,
+                    });
                     setMessages([
                       ...messages,
                       {

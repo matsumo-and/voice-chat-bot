@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const modelId = "amazon.titan-text-premier-v1:0";
+  const modelId = "amazon.titan-text-express-v1";
   const notification = `
   ### 条件
   下記の条件は必ず守ってください。
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       role: "user",
       content: [
         {
-          text: notification,
+          text: JSON.stringify(notification),
         },
       ],
     },
@@ -90,14 +90,16 @@ export async function POST(req: NextRequest) {
       ? response.output?.message?.content[0].text
       : undefined;
 
-    if (!responseText) {
+    console.log(response);
+
+    if (!responseText || response.$metadata.httpStatusCode !== 200) {
       return NextResponse.json(
         { error: "Failed to fetch content" },
         { status: 500 }
       );
     }
 
-    return new Response(responseText, {
+    return new Response(JSON.stringify(responseText), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
