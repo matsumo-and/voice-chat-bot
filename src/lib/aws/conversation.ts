@@ -9,4 +9,5 @@ export const conversation = async (message: Conversation) => {
   const body = await response.json();
 
   console.log(body.toString());
+  return body.toString();
 };

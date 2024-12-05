@@ -14,6 +14,7 @@ import Mic from "@mui/icons-material/Mic";
 import { listBucket } from "@/lib/aws/listS3";
 import useTranscribe from "@/lib/aws/streamTranscribe";
 import { conversation } from "@/lib/aws/conversation";
+import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 
 type Message = {
   sender: "user" | "chatbot";
@@ -23,6 +24,7 @@ type Message = {
 export default function Home(props: { disableCustomTheme?: boolean }) {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState<string>("");
+  const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
 
   const { startTranscription, stopTranscription, recording, transcripts } =
     useTranscribe();
@@ -45,6 +47,12 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
     <AppTheme {...props} themeComponents={undefined}>
       <CssBaseline enableColorScheme />
       <AppNavbar />
+      {audioUrl && (
+        <audio controls autoPlay hidden>
+          <source src={audioUrl} type="audio/mpeg" />
+          Your browser does not support the audio tag.
+        </audio>
+      )}
 
       <Box
         sx={{
@@ -80,6 +88,7 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
                 minWidth: "100%",
                 height: "100vh",
                 overflowY: "scroll",
+                paddingBottom: "50px",
               })}
             >
               {messages.map((message, index) => (
@@ -178,6 +187,17 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
                 <IconButton
                   color="error"
                   onClick={async () => {
+                    setMessages((prev) => [
+                      ...prev,
+                      {
+                        sender: "user",
+                        content: transcripts
+                          .map((transcript) => transcript.transcript)
+                          .join(" "),
+                      },
+                    ]);
+
+                    // recording stop
                     stopTranscription();
 
                     const tmp = messages.map((message) => {
@@ -191,21 +211,54 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
                       return aa;
                     });
 
-                    await conversation({
+                    const textResponse: string = await conversation({
                       message: transcripts
                         .map((transcript) => transcript.transcript)
                         .join(" "),
                       history: tmp,
                     });
-                    setMessages([
-                      ...messages,
+
+                    setMessages((prev) => [
+                      ...prev,
                       {
-                        sender: "user",
-                        content: transcripts
-                          .map((transcript) => transcript.transcript)
-                          .join(" "),
+                        sender: "chatbot",
+                        content: textResponse,
                       },
                     ]);
+
+                    // polly
+                    const client = new PollyClient({
+                      region: process.env.NEXT_PUBLIC_AWS_REGION,
+                      credentials: {
+                        accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
+                        secretAccessKey:
+                          process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
+                      },
+                    });
+
+                    try {
+                      const command = new SynthesizeSpeechCommand({
+                        OutputFormat: "mp3",
+                        Text: textResponse,
+                        VoiceId: "Danielle",
+                        SampleRate: "22050",
+                        TextType: "text",
+                        LanguageCode: "en-US",
+                        Engine: "neural",
+                      });
+                      const response = await client.send(command);
+
+                      if (response.AudioStream) {
+                        const buffer = Buffer.from(
+                          await response.AudioStream.transformToByteArray()
+                        );
+                        const blob = new Blob([buffer], { type: "audio/mpeg" });
+                        const url = URL.createObjectURL(blob);
+                        setAudioUrl(url); // 音声URLを保存
+                      }
+                    } catch (error) {
+                      console.error("Error fetching audio from Polly:", error);
+                    }
                   }}
                   sx={{ marginX: 1 }}
                 >

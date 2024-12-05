@@ -54,16 +54,14 @@ const useTranscribe = () => {
     };
 
     const command = new StartStreamTranscriptionCommand({
-      // The language code for the input audio. Valid values are en-GB, en-US, es-US, fr-CA, and fr-FR
       LanguageCode: "en-US",
-      // The encoding used for the input audio. The only valid value is pcm.
       MediaEncoding: "pcm",
-      // The sample rate of the input audio in Hertz. We suggest that you use 8000 Hz for low-quality audio and 16000 Hz for
-      // high-quality audio. The sample rate must match the sample rate in the audio file.
       MediaSampleRateHertz: 44100,
       AudioStream: audioStream(),
     });
     const response = await client.send(command);
+
+    console.log(JSON.stringify(response.TranscriptResultStream));
 
     if (response.TranscriptResultStream) {
       // This snippet should be put into an async function
