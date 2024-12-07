@@ -12,9 +12,9 @@ import { Typography, TextField, IconButton } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import Mic from "@mui/icons-material/Mic";
 import { listBucket } from "@/lib/aws/listS3";
-import useTranscribe from "@/lib/aws/streamTranscribe";
 import { conversation } from "@/lib/aws/conversation";
 import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
+import useTranscribe from "@/hooks/useTranscribe";
 
 type Message = {
   sender: "user" | "chatbot";
@@ -48,7 +48,7 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
       <CssBaseline enableColorScheme />
       <AppNavbar />
       {audioUrl && (
-        <audio controls autoPlay hidden>
+        <audio controls autoPlay hidden key={audioUrl}>
           <source src={audioUrl} type="audio/mpeg" />
           Your browser does not support the audio tag.
         </audio>

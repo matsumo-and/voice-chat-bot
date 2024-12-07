@@ -9,6 +9,7 @@ import { useState } from "react";
 import update from "immutability-helper";
 import { Credentials } from "aws-sdk";
 
+// encode to pcm
 const pcmEncodeChunk = (chunk: Buffer) => {
   const input = MicrophoneStream.toRaw(chunk);
   let offset = 0;
