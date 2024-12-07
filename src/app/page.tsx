@@ -217,9 +217,7 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
                 onKeyDown={(e) => {
                   if (e.shiftKey && e.key === "Enter") {
                     setInput((value) => value + "\n");
-                    console.log(input);
                   } else if (e.key === "Enter") {
-                    console.log(e.key);
                     handleSend();
                   }
                 }}

@@ -67,8 +67,6 @@ const useTranscribe = () => {
     });
     const response = await client.send(command);
 
-    console.log(JSON.stringify(response.TranscriptResultStream));
-
     if (response.TranscriptResultStream) {
       // This snippet should be put into an async function
       for await (const event of response.TranscriptResultStream) {
