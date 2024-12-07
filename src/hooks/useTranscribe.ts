@@ -7,7 +7,8 @@ import {
 import MicrophoneStream from "microphone-stream";
 import { useState } from "react";
 import update from "immutability-helper";
-import { Credentials } from "aws-sdk";
+import { getToken } from "@/lib/aws/getToken";
+import { Credentials } from "@aws-sdk/client-sts";
 
 // encode to pcm
 const pcmEncodeChunk = (chunk: Buffer) => {
@@ -33,15 +34,14 @@ const useTranscribe = () => {
   >([]);
 
   const startStream = async (mic: MicrophoneStream) => {
-    const credentailResponse: Response = await fetch("/api/token");
-    const credential: Credentials = await credentailResponse.json();
+    const credential: Credentials = await getToken();
 
     const client = new TranscribeStreamingClient({
-      region: process.env.NEXT_PUBLIC_AWS_REGION,
+      region: "ap-northeast-1",
       credentials: {
-        accessKeyId: credential.accessKeyId,
-        secretAccessKey: credential.secretAccessKey,
-        sessionToken: credential.sessionToken,
+        accessKeyId: credential.AccessKeyId!,
+        secretAccessKey: credential.SecretAccessKey!,
+        sessionToken: credential.SessionToken!,
       },
     });
 

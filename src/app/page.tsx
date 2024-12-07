@@ -11,10 +11,9 @@ import AppTheme from "../components/AppTheme";
 import { Typography, TextField, IconButton } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import Mic from "@mui/icons-material/Mic";
-import { listBucket } from "@/lib/aws/listS3";
-import { conversation } from "@/lib/aws/conversation";
-import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
+import { getConversation } from "@/lib/aws/getConversation";
 import useTranscribe from "@/hooks/useTranscribe";
+import usePolly from "@/hooks/usePolly";
 
 type Message = {
   sender: "user" | "chatbot";
@@ -24,8 +23,8 @@ type Message = {
 export default function Home(props: { disableCustomTheme?: boolean }) {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState<string>("");
-  const [audioUrl, setAudioUrl] = React.useState<string | null>(null);
 
+  const { audioUrl, getSynthesizedVoice } = usePolly();
   const { startTranscription, stopTranscription, recording, transcripts } =
     useTranscribe();
 
@@ -33,14 +32,60 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
     if (input.trim() === "") return;
     const newMessage: Message = { sender: "user", content: input };
 
-    const s3ls: string = await listBucket();
-
     setMessages([
       ...messages,
       newMessage,
-      { sender: "chatbot", content: s3ls ?? "no value" },
+      { sender: "chatbot", content: "no value" },
     ]);
     setInput("");
+  };
+
+  // onRecordStart.
+  const handleStaertRecord = async () => {
+    await startTranscription();
+  };
+
+  // onRecordStop.
+  const handleStopRecord = async () => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "user",
+        content: transcripts
+          .map((transcript) => transcript.transcript)
+          .join(" "),
+      },
+    ]);
+
+    // recording stop
+    stopTranscription();
+
+    const tmp = messages.map((message) => {
+      const aa: {
+        role: "user" | "chatbot";
+        message: string;
+      } = {
+        role: message.sender,
+        message: message.content,
+      };
+      return aa;
+    });
+
+    const textResponse: string = await getConversation({
+      message: transcripts.map((transcript) => transcript.transcript).join(" "),
+      history: tmp,
+    });
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "chatbot",
+        content: textResponse,
+      },
+    ]);
+
+    // synthesize voice.
+    await getSynthesizedVoice(textResponse);
   };
 
   return (
@@ -186,80 +231,7 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
               {recording ? (
                 <IconButton
                   color="error"
-                  onClick={async () => {
-                    setMessages((prev) => [
-                      ...prev,
-                      {
-                        sender: "user",
-                        content: transcripts
-                          .map((transcript) => transcript.transcript)
-                          .join(" "),
-                      },
-                    ]);
-
-                    // recording stop
-                    stopTranscription();
-
-                    const tmp = messages.map((message) => {
-                      const aa: {
-                        role: "user" | "chatbot";
-                        message: string;
-                      } = {
-                        role: message.sender,
-                        message: message.content,
-                      };
-                      return aa;
-                    });
-
-                    const textResponse: string = await conversation({
-                      message: transcripts
-                        .map((transcript) => transcript.transcript)
-                        .join(" "),
-                      history: tmp,
-                    });
-
-                    setMessages((prev) => [
-                      ...prev,
-                      {
-                        sender: "chatbot",
-                        content: textResponse,
-                      },
-                    ]);
-
-                    // polly
-                    const client = new PollyClient({
-                      region: process.env.NEXT_PUBLIC_AWS_REGION,
-                      credentials: {
-                        accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID!,
-                        secretAccessKey:
-                          process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY!,
-                      },
-                    });
-
-                    try {
-                      const command = new SynthesizeSpeechCommand({
-                        OutputFormat: "mp3",
-                        Text: textResponse,
-                        VoiceId: "Danielle",
-                        SampleRate: "22050",
-                        TextType: "text",
-                        LanguageCode: "en-US",
-                        Engine: "neural",
-                      });
-                      const response = await client.send(command);
-
-                      if (response.AudioStream) {
-                        const buffer = Buffer.from(
-                          await response.AudioStream.transformToByteArray()
-                        );
-                        const blob = new Blob([buffer], { type: "audio/mpeg" });
-                        const url = URL.createObjectURL(blob);
-                        setAudioUrl(url); // 音声URLを保存
-                      }
-                    } catch (error) {
-                      console.error("Error fetching audio from Polly:", error);
-                    }
-                  }}
+                  onClick={handleStopRecord}
                   sx={{ marginX: 1 }}
                 >
                   <Mic fontSize={"large"} />
@@ -267,9 +239,7 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
               ) : (
                 <IconButton
                   color="info"
-                  onClick={async () => {
-                    await startTranscription();
-                  }}
+                  onClick={handleStaertRecord}
                   sx={{ marginX: 1 }}
                 >
                   <Mic fontSize={"large"} />

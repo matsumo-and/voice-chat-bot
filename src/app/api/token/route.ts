@@ -12,7 +12,6 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function GET(req: NextRequest) {
   // TODO: req validate
-  console.log(req);
 
   // init Client.
   const client = new STSClient({});
