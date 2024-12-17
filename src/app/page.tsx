@@ -131,9 +131,10 @@ export default function Home(props: { disableCustomTheme?: boolean }) {
               component="main"
               sx={() => ({
                 minWidth: "100%",
-                height: "100vh",
+                height: "calc(100vh - 150px)",
                 overflowY: "scroll",
-                paddingBottom: "50px",
+                paddingTop: "10px",
+                paddingBottom: "100px",
               })}
             >
               {messages.map((message, index) => (
